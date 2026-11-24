@@ -1,0 +1,46 @@
+# SIMULADOR DE DESACTIVACION - ATmega328P (C, Microchip Studio)
+
+## Archivos
+main.c + gpio, timer, i2c, lcd, tm1637, keypad, adc, buzzer, cables y juego (.h/.c).
+
+## Crear proyecto
+1. En Microchip Studio: File > New > Project > GCC C Executable Project, dispositivo ATmega328P.
+2. Agregar TODOS los .c y .h de esta carpeta al proyecto (Add > Existing Item).
+3. Compilar en Release/Debug y localizar el archivo `Simulador_Desactivacion.hex` en Debug o Release.
+4. En Proteus, propiedades del ATMEGA328P > Program File: elegir ese .hex, Clock Frequency=16MHz.
+5. Ejecutar simulacion. El modelo de Proteus debe contar con simulacion funcional de TM1637 y PCF8574.
+
+## Mapa de conexiones (ATmega328P en encapsulado QFP-32 segun netlist LOGICA)
+- LCD con PCF8574: PC4(p27) SDA; PC5(p28) SCL. PCF8574 A0,A1,A2=GND => direccion 0x20.
+- PCF8574: P0-RS, P1-RW, P2-E, P4-D4, P5-D5, P6-D6, P7-D7 (LCD).
+- TM1637: PB5(p17) CLK, PB4(p16) DIO; SG1..SG8 a A..DP; GRID1..4 a digitos 1..4.
+- Teclado: PD4,PD5,PD6,PD7 a filas A,B,C,D; PB0,PB1,PB2,PB3 a columnas 1,2,3,4.
+- Buzzer: PD3(p1)=OC2B, el otro extremo GND.
+- Potenciometro: PC0(p23) cursor; extremos 5V y GND.
+- Cables: PC1(p24),PC2(p25),PC3(p26),PD2(p32,INT0) mediante SW-SPST a GND.
+- Alimentacion: VCC, AVCC, GND y RESET pull-up. CLK del modelo 16MHz.
+- El hardware comprado es Arduino UNO R3 con ATmega328P; etiquetas Arduino D2, D3 etc. corresponden a las funciones de pines anteriores.
+
+## Uso
+- Los cuatro interruptores deben comenzar CERRADOS (cables presentes).
+- En Proteus, el teclado KEYPAD-SMALLCALC usa la tecla **=** como '#' para iniciar/reiniciar.
+- LCD: pantalla inicial 'SIMULADOR LISTO'. Presiona '#' (en simulador '=') para comenzar.
+- Etapa 1: la LCD presenta la suma de dos valores de 3 cifras; introducir resultado en 4 digitos (con ceros adelante). Error resta 15 segundos.
+- Etapa 2: ajustar RV1 hasta la meta +/- 2 puntos porcentuales durante 3 s continuos.
+- Etapa 3: hay que tener los cuatro cables conectados. El tiempo se reajusta a 30 s y Timer1 acelera la cuenta al doble; desconectar 1, 2, 3 y 4 (INT0) en ese orden. Error provoca fallo.
+- '#': reinicia despues de ganar/perder.
+
+## Ajustes que pueden variar de modelo a modelo
+- `lcd.h`: LCD_I2C_ADDRESS es 0x20 para PCF8574 con A0/A1/A2=GND como en Proteus; el adaptador real puede ser 0x27 o 0x3F (y tipo PCF8574A).
+- `keypad.c`: KEYPAD_PROTEUS_CALC=1 para teclado virtual de Proteus; poner 0 para teclado fisico 4x4 estandar y comprobar orden real de los 8 terminales.
+- `tm1637.c`: bit 7 del segundo digito activa el punto/colon en muchos modulos; el display virtual 7SEG-MPX4-CA muestra puntos, no el ':' central real.
+- Los modulos TM1637 comerciales suelen llevar resistencias pull-up propias; en Proteus hay R3 y R4=10k.
+- La LCD fisica suele tener control de retroiluminacion en P3, mientras que en Proteus se deja sin conectar; el codigo deja P3 alto.
+- Timer1 usa CTC: 1 ms base normal OCR1A=249, en la etapa final OCR1A=124 (doble velocidad logica).
+- El buzzer pasivo tiene salida PWM hardware por Timer2 OC2B, aproximadamente 2-5 kHz.
+- No se usan delay() ni _delay_ms(). La transmision I2C espera solamente los eventos internos TWINT; TM1637 requiere pulsos de unos microsegundos.
+
+## Pendientes de validacion
+- No se ha ejecutado la simulacion real de Proteus ni se ha probado el .hex en tu tarjeta. La polaridad/teclas y el modelo TM1637 deben validarse en Proteus.
+- El documento original menciona MAX7219: actualizar la propuesta para reflejar TM1637 si esta permitido.
+- La parte fisica debe utilizar solamente 5 V y elementos seguros; no romper capacitores.
