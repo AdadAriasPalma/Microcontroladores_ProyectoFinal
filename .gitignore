@@ -1,0 +1,7 @@
+# Respaldos y archivos temporales de Proteus
+*.pdsbak
+*.dbk
+Last Loaded *
+*.workspace
+*.SDF
+Project Backups/
